@@ -42,15 +42,28 @@ app.get('/', (request, response) => {
 /*
  * Socket.io
  */
-let id = 0;
-
 io.on('connection', (ws) => {
-  console.log('>> socket.io - connected');
+  // A player creates a game
+  ws.on('create', (gameID) => {
+    ws.join(gameID);
+  });
 
-  ws.on('client_send_data', (data) => {
-    data.id = Math.random().slice(2, 10);
+  // An other player joins the game
+  ws.on('join', (gameID) => {
+    ws.join(gameID);
+    io.emit('player_join');
+  });
 
-    io.emit('server_send_data', data);
+  // A player clicks on a cell
+  ws.on('move', (data) => {
+    const { gameID } = JSON.parse(data);
+    io.to(gameID).emit('player_move', data);
+  });
+
+  // A player restarts a game
+  ws.on('restart', (data) => {
+    const { gameID } = JSON.parse(data);
+    io.to(gameID).emit('restart');
   });
 });
 
