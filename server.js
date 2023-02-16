@@ -49,9 +49,23 @@ io.on('connection', (ws) => {
   });
 
   // An other player joins the game
-  ws.on('join', (gameID) => {
-    ws.join(gameID);
-    io.emit('player_join');
+  ws.on('join', (data) => {
+    const { gameID, variant } = JSON.parse(data);
+
+    let rooms = io.sockets.adapter.rooms;
+    let room = rooms.get(gameID);
+
+    if (room.size < 2) {
+      ws.join(gameID);
+      io.emit('player_join', JSON.stringify({
+        gameID,
+        variant,
+        clientId: ws.id,
+      }));
+    }
+    else {
+      io.emit('player_reject', ws.id);
+    }
   });
 
   // A player clicks on a cell
@@ -63,7 +77,7 @@ io.on('connection', (ws) => {
   // A player restarts a game
   ws.on('restart', (data) => {
     const { gameID } = JSON.parse(data);
-    io.to(gameID).emit('restart');
+    io.to(gameID).emit('restart', data);
   });
 });
 
